@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Rewind saves the last 30 seconds, after they happen. Try the demo.">
+<style>body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>Rewind</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: a scroll story of pinned "stages" (Apple-style), light paper sections
+   alternating with dark ones, ending in a working demo of the app.
+   One committed look that matches the presentation, so no dark-mode variant. */
+:root {
+  --paper: #F5F3EE;
+  --paper-2: #ECE8E0;
+  --ink: #14161B;
+  --soft: #5D616B;
+  --line: #DCD7CD;
+  --blue: #3355FF;
+  --blue-soft: #8FA4FF;
+  --blue-tint: #EEF1FF;
+  --dark: #0E1116;
+  --dark-card: #1A1E26;
+  --dark-soft: #A9AFBA;
+  --rec: #FF3B30;
+  --white: #FFFFFF;
+  --display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --gut-l: max(16px, env(safe-area-inset-left, 0px));
+  --gut-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 18px; line-height: 1.5; overflow-x: clip; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+img { display: block; max-width: 100%; }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding-left: var(--gut-l); padding-right: var(--gut-r); }
+.eyebrow { font-size: 14px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--blue); }
+.dark .eyebrow { color: var(--blue-soft); }
+.h2 { font-size: clamp(36px, 6vw, 72px); font-weight: 800; line-height: 1.05; letter-spacing: -.03em; }
+.lead { font-size: clamp(18px, 2vw, 22px); color: var(--soft); max-width: 36em; }
+.dark { background: var(--dark); color: var(--white); }
+.dark .lead { color: var(--dark-soft); }
+
+/* Reveal on scroll (only when JS runs and motion is allowed) */
+.js .reveal { opacity: 0; transform: translateY(40px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+.js .reveal.in { opacity: 1; transform: none; }
+
+/* Nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(245,243,238,.85); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(245,243,238,.8); backdrop-filter: saturate(1.6) blur(16px); -webkit-backdrop-filter: saturate(1.6) blur(16px); border-bottom: 1px solid rgba(20,22,27,.06); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--ink); text-decoration: none; }
+.brand svg { width: 30px; height: 30px; }
+.nav-links { display: flex; align-items: center; gap: 24px; font-size: 15px; }
+.nav-links a { color: var(--soft); text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+.pill-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: var(--white) !important; border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 600; text-decoration: none; }
+.pill-btn:hover { background: #2443E6; }
+@media (max-width: 640px) { .nav-links .hide-sm { display: none; } }
+
+/* Pinned scroll stages */
+.scrub { position: relative; }
+.stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+
+/* Phone mockup */
+.phone { position: relative; width: var(--pw, 300px); aspect-ratio: 9 / 19.5; max-width: 100%; background: #0B0B0D; border-radius: calc(var(--pw, 300px) * .16); padding: calc(var(--pw, 300px) * .035); box-shadow: 0 40px 80px rgba(20,22,27,.28), inset 0 0 0 2px #2A2C31; }
+.screen { position: relative; width: 100%; height: 100%; border-radius: calc(var(--pw, 300px) * .13); overflow: hidden; background: #000; }
+.screen img { width: 100%; height: 100%; object-fit: cover; }
+.island { position: absolute; top: 3%; left: 50%; transform: translateX(-50%); width: 30%; height: 3.6%; background: #000; border-radius: 99px; z-index: 3; }
+.rec { position: absolute; top: 9%; left: 7%; display: inline-flex; align-items: center; gap: 7px; background: rgba(14,17,22,.6); color: var(--white); border-radius: 99px; padding: 6px 12px; font-size: 13px; font-weight: 600; z-index: 2; }
+.rec i { width: 9px; height: 9px; border-radius: 50%; background: var(--rec); animation: blink 1.4s infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+
+/* 1 · Hero */
+#hero { height: 220vh; }
+#hero .stage { display: flex; flex-direction: column; align-items: center; padding-top: clamp(48px, 9vh, 96px); }
+.hero-copy { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px; padding-left: var(--gut-l); padding-right: var(--gut-r); will-change: transform, opacity; }
+.hero-copy h1 { font-size: clamp(64px, 13vw, 168px); font-weight: 800; letter-spacing: -.055em; line-height: .9; }
+.hero-copy .tag { font-family: var(--display); font-size: clamp(24px, 3.4vw, 44px); font-weight: 700; color: var(--blue); line-height: 1.1; }
+.hero-copy .lead { text-align: center; }
+.hero-phone { --pw: clamp(220px, 24vw, 320px); margin-top: clamp(28px, 5vh, 48px); will-change: transform; }
+.hero-hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 14px; color: var(--soft); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hero-hint span { width: 2px; height: 28px; background: linear-gradient(var(--soft), transparent); animation: drip 1.8s infinite; }
+@keyframes drip { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+
+/* 2 · Story */
+#story { height: 320vh; }
+#story .stage { background: #000; color: var(--white); display: flex; align-items: center; }
+#story .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; will-change: transform; }
+#story .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.35)); }
+.story-text { position: relative; display: flex; flex-direction: column; gap: 22px; max-width: 900px; }
+.story-text p { font-family: var(--display); font-size: clamp(30px, 4.6vw, 60px); font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+.w { opacity: .18; transition: opacity .25s linear; }
+.w.on { opacity: 1; }
+.story-text .lost .w.on { color: var(--rec); }
+
+/* 3 · Problem (text fills in) */
+#problem { height: 200vh; }
+#problem .stage { display: flex; align-items: center; }
+.fill { font-size: clamp(40px, 7.4vw, 104px); font-weight: 800; line-height: 1.02; letter-spacing: -.04em; max-width: 14ch; }
+.fill span { background: linear-gradient(90deg, var(--ink) 50%, #CBC5B9 50%); background-size: 200% 100%; background-position: 100% 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fill em { font-style: normal; }
+.fill em span { background-image: linear-gradient(90deg, var(--blue) 50%, #CBC5B9 50%); }
+
+/* 4 · Moments (horizontal track) */
+#moments { height: 300vh; background: var(--paper-2); }
+#moments .stage { display: flex; flex-direction: column; justify-content: center; gap: clamp(24px, 4vh, 48px); }
+.track { display: flex; gap: 28px; padding-left: max(var(--gut-l), calc((100vw - 1180px) / 2 + 16px)); will-change: transform; }
+.mcard { flex: 0 0 auto; width: min(78vw, 560px); display: flex; flex-direction: column; gap: 14px; }
+.mcard .ph { aspect-ratio: 4 / 3; border-radius: 28px; overflow: hidden; background: var(--line); }
+.mcard img { width: 100%; height: 100%; object-fit: cover; }
+.mcard h3 { font-size: clamp(24px, 2.6vw, 32px); font-weight: 700; }
+.mcard p { color: var(--soft); }
+.mcard.end { width: min(70vw, 420px); justify-content: center; }
+.mcard.end p { font-family: var(--display); font-size: clamp(28px, 3.4vw, 44px); font-weight: 800; color: var(--ink); line-height: 1.1; }
+
+/* 5 · Thirty seconds */
+#thirty { height: 240vh; }
+#thirty .stage { display: flex; align-items: center; justify-content: center; text-align: center; }
+.ring { position: relative; width: min(70vw, 440px); aspect-ratio: 1; margin: 0 auto; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 10; }
+.ring .bgc { stroke: var(--dark-card); }
+.ring .fg { stroke: var(--blue); stroke-linecap: round; }
+.ring .num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring b { font-family: var(--display); font-size: clamp(96px, 18vw, 200px); font-weight: 800; line-height: .9; letter-spacing: -.05em; color: var(--white); font-variant-numeric: tabular-nums; }
+.ring small { font-size: clamp(18px, 2vw, 24px); color: var(--dark-soft); }
+.thirty-copy { margin-top: clamp(24px, 4vh, 40px); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.thirty-copy h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 800; letter-spacing: -.02em; max-width: 20ch; }
+
+/* 6 · How it works */
+#how { padding-block: clamp(80px, 12vh, 140px); }
+.how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.how-steps { display: flex; flex-direction: column; }
+.how-head { display: flex; flex-direction: column; gap: 16px; padding-bottom: 8vh; }
+.step { min-height: 72vh; display: flex; flex-direction: column; justify-content: center; gap: 14px; opacity: .3; transition: opacity .4s; }
+.step.active { opacity: 1; }
+.step .n { width: 52px; height: 52px; border-radius: 16px; background: var(--blue); color: var(--white); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 22px; }
+.step h3 { font-size: clamp(32px, 4vw, 52px); font-weight: 800; letter-spacing: -.02em; }
+.step p { color: var(--soft); font-size: 20px; max-width: 26em; }
+.how-phone { position: sticky; top: calc(56px + 6vh); display: flex; justify-content: center; }
+.how-phone .phone { --pw: clamp(240px, 26vw, 330px); }
+.scr { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; }
+.scr.active { opacity: 1; }
+.scr .scrim { position: absolute; inset: auto 0 0 0; height: 45%; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
+.buf { position: absolute; left: 8%; right: 8%; bottom: 7%; display: flex; flex-direction: column; gap: 8px; color: var(--white); font-size: 13px; font-weight: 600; }
+.buf .bar { height: 6px; border-radius: 9px; background: rgba(255,255,255,.25); overflow: hidden; }
+.buf .bar i { display: block; height: 100%; width: 100%; background: var(--white); transform-origin: left; animation: fillbar 6s linear infinite; }
+@keyframes fillbar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.big-save { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); width: 34%; aspect-ratio: 1; border-radius: 50%; background: var(--white); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 8px rgba(255,255,255,.3); animation: press 2.4s ease-in-out infinite; }
+.big-save svg { width: 46%; height: 46%; color: var(--blue); }
+@keyframes press { 0%, 70%, 100% { transform: translateX(-50%) scale(1); } 80% { transform: translateX(-50%) scale(.86); } }
+.saved { position: absolute; top: 9%; left: 7%; display: inline-flex; align-items: center; gap: 7px; background: var(--blue); color: var(--white); border-radius: 99px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+.sheet { position: absolute; left: 5%; right: 5%; bottom: 4%; background: var(--white); border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--ink); }
+.sheet b { font-family: var(--display); font-size: 15px; }
+.sheet div { display: flex; justify-content: space-between; }
+.sheet span { width: 38px; height: 38px; border-radius: 50%; background: var(--blue-tint); display: flex; align-items: center; justify-content: center; }
+.sheet svg { width: 20px; height: 20px; color: var(--blue); }
+@media (max-width: 820px) {
+  .how-grid { grid-template-columns: 1fr; gap: 0; }
+  .how-phone { order: -1; top: 56px; z-index: 1; padding-block: 12px; background: var(--paper); box-shadow: 0 12px 16px -12px rgba(20,22,27,.15); }
+  .how-phone .phone { --pw: 150px; }
+  .step { min-height: 60vh; }
+  .how-head { padding-bottom: 4vh; }
+}
+
+/* 7 · Features */
+#features { padding-block: clamp(80px, 12vh, 140px); background: var(--paper-2); }
+.sec-head { display: flex; flex-direction: column; gap: 16px; margin-bottom: clamp(32px, 6vh, 64px); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.card { background: var(--white); border-radius: 32px; padding: clamp(28px, 4vw, 44px); display: flex; flex-direction: column; gap: 14px; }
+.ico { width: 60px; height: 60px; border-radius: 18px; background: var(--blue); color: var(--white); display: flex; align-items: center; justify-content: center; }
+.ico svg { width: 30px; height: 30px; }
+.card h3 { font-size: clamp(24px, 2.6vw, 32px); font-weight: 700; }
+.card p { color: var(--soft); }
+.chips { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(40px, 8vh, 80px); }
+.chips span { background: var(--white); border: 1px solid var(--line); border-radius: 999px; padding: 12px 20px; font-size: 17px; color: var(--soft); }
+.chips b { color: var(--ink); font-weight: 600; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* 8 · Who */
+#who { padding-block: clamp(80px, 12vh, 140px); }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.who { border: 1px solid var(--line); border-radius: 28px; padding: 28px; display: flex; flex-direction: column; gap: 12px; background: var(--white); }
+.who .ico { background: var(--blue-tint); color: var(--blue); }
+.who h3 { font-size: 24px; font-weight: 700; }
+.who p { color: var(--soft); font-size: 17px; }
+@media (max-width: 900px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .grid4 { grid-template-columns: minmax(0, 1fr); } }
+
+/* 9 · Safe */
+#safe { padding-block: clamp(80px, 12vh, 140px); }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.dcard { background: var(--dark-card); border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 14px; }
+.dcard h3 { font-size: 26px; font-weight: 700; }
+.dcard p { color: var(--dark-soft); }
+@media (max-width: 820px) { .grid3 { grid-template-columns: minmax(0, 1fr); } }
+
+/* 10 · Compare */
+#compare { padding-block: clamp(80px, 12vh, 140px); }
+.vs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.vs > div { border-radius: 32px; padding: clamp(28px, 4vw, 44px); display: flex; flex-direction: column; gap: 18px; }
+.vs .old { background: var(--paper-2); }
+.vs .new { background: var(--blue); color: var(--white); }
+.vs h3 { font-size: 28px; font-weight: 800; }
+.vs ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; font-size: 19px; }
+.vs li { display: flex; gap: 12px; align-items: baseline; }
+.vs .old li { color: var(--soft); }
+.vs li::before { content: ""; flex: 0 0 10px; height: 10px; border-radius: 50%; background: currentColor; opacity: .5; transform: translateY(-1px); }
+@media (max-width: 720px) { .vs { grid-template-columns: minmax(0, 1fr); } }
+
+/* 11 · Demo */
+#demo { padding-block: clamp(80px, 12vh, 140px); scroll-margin-top: 56px; }
+.demo-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.viewer { position: relative; border-radius: 28px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; box-shadow: 0 30px 60px rgba(0,0,0,.4); }
+.viewer canvas { width: 100%; height: 100%; display: block; }
+.viewer .rec { top: 16px; left: 16px; font-size: 14px; }
+.viewer .flash { position: absolute; inset: 0; background: var(--white); opacity: 0; pointer-events: none; }
+.viewer .flash.go { animation: flash .5s ease-out; }
+@keyframes flash { from { opacity: .7; } to { opacity: 0; } }
+.toast { position: absolute; left: 50%; bottom: 16px; transform: translate(-50%, 20px); background: var(--blue); color: var(--white); border-radius: 99px; padding: 10px 18px; font-weight: 600; font-size: 15px; opacity: 0; transition: opacity .3s, transform .3s; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.memory { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.memory .row { display: flex; justify-content: space-between; font-size: 15px; color: var(--dark-soft); font-variant-numeric: tabular-nums; }
+.memory .bar { height: 8px; border-radius: 9px; background: var(--dark-card); overflow: hidden; }
+.memory .bar i { display: block; height: 100%; width: 0; background: var(--blue); border-radius: 9px; transition: width .4s linear; }
+.panel { background: var(--dark-card); border: 1px solid rgba(255,255,255,.1); border-radius: 28px; padding: 28px; display: flex; flex-direction: column; gap: 22px; }
+.ctrl { display: flex; flex-direction: column; gap: 10px; }
+.ctrl > label, .ctrl > span { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dark-soft); }
+.seg { display: flex; background: #0B0D12; border-radius: 14px; padding: 4px; gap: 4px; }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--dark-soft); border-radius: 10px; padding: 10px 8px; font-weight: 600; font-size: 15px; }
+.seg button[aria-pressed="true"] { background: var(--white); color: var(--ink); }
+.seg button:disabled { opacity: .4; cursor: not-allowed; }
+.power { border: 0; border-radius: 16px; padding: 16px; font-weight: 700; font-size: 18px; background: var(--white); color: var(--ink); display: flex; align-items: center; justify-content: center; gap: 10px; }
+.power[aria-pressed="true"] { background: #2A2F3A; color: var(--white); }
+.power i { width: 12px; height: 12px; border-radius: 50%; background: var(--rec); }
+.save { border: 0; border-radius: 20px; padding: 22px; font-family: var(--display); font-weight: 800; font-size: 26px; background: var(--blue); color: var(--white); display: flex; align-items: center; justify-content: center; gap: 12px; transition: transform .1s; }
+.save svg { width: 30px; height: 30px; }
+.save:active { transform: scale(.97); }
+.save:disabled { background: #2A2F3A; color: #6B7280; cursor: not-allowed; }
+.hint { font-size: 14px; color: var(--dark-soft); text-align: center; }
+.hint kbd { font-family: var(--body); background: #0B0D12; border: 1px solid #2A2F3A; border-radius: 6px; padding: 1px 7px; color: var(--white); }
+.check { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--white); }
+.check input { width: 20px; height: 20px; accent-color: var(--blue); }
+.status { font-size: 15px; color: var(--dark-soft); min-height: 1.5em; }
+.clips-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: clamp(40px, 7vh, 64px); margin-bottom: 20px; }
+.clips-head h3 { font-size: clamp(26px, 3vw, 36px); font-weight: 800; }
+.ghost { border: 1px solid #3A404D; background: transparent; color: var(--white); border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.ghost:hover { background: #1F242E; }
+.ghost[aria-pressed="true"] { background: var(--white); color: var(--ink); border-color: var(--white); }
+.clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.clip { background: var(--dark-card); border: 1px solid rgba(255,255,255,.1); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; }
+.clip video { width: 100%; aspect-ratio: 16 / 9; background: #000; display: block; object-fit: cover; }
+.clip .meta { padding: 14px 16px 0; display: flex; justify-content: space-between; font-size: 14px; color: var(--dark-soft); font-variant-numeric: tabular-nums; }
+.clip .meta b { color: var(--white); font-weight: 600; }
+.clip .prog { margin: 10px 16px 0; height: 4px; border-radius: 4px; background: #2A2F3A; overflow: hidden; }
+.clip .prog i { display: block; height: 100%; width: 0; background: var(--blue); }
+.clip .acts { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px 16px; }
+.clip .acts button { padding: 8px 14px; font-size: 14px; }
+.empty { border: 1px dashed #3A404D; border-radius: 22px; padding: 32px; color: var(--dark-soft); text-align: center; }
+@media (max-width: 900px) { .demo-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* 12 · End */
+#end { position: relative; min-height: 80vh; display: flex; align-items: flex-end; color: var(--white); overflow: hidden; }
+#end img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+#end .shade { position: absolute; inset: 0; background: linear-gradient(transparent 20%, rgba(0,0,0,.8)); }
+#end .wrap { position: relative; padding-block: clamp(64px, 12vh, 120px); display: flex; flex-direction: column; gap: 22px; align-items: flex-start; }
+#end h2 { font-size: clamp(40px, 7vw, 96px); font-weight: 800; letter-spacing: -.04em; line-height: 1; max-width: 12ch; }
+footer { background: var(--dark); color: var(--dark-soft); font-size: 13px; padding-block: 32px; }
+footer .wrap { display: flex; flex-direction: column; gap: 8px; }
+footer b { color: var(--white); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+  .rec i, .buf .bar i, .big-save, .hero-hint span { animation: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-rewind" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-click" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9l11 4-5 2-2 5z"/><path d="M5 3v3M3 5h3M14 3l-1.5 2M3 14l2-1.5"/></symbol>
+  <symbol id="i-slow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-ball" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+  <symbol id="i-paw" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="6" cy="10" rx="2" ry="2.6"/><ellipse cx="10" cy="6" rx="2" ry="2.6"/><ellipse cx="14.5" cy="6" rx="2" ry="2.6"/><ellipse cx="18.5" cy="10" rx="2" ry="2.6"/><path d="M12 11c3 0 6 4 6 6.5 0 2-2 2.5-3 2.5-1.4 0-1.8-.8-3-.8s-1.6.8-3 .8c-1 0-3-.5-3-2.5C6 15 9 11 12 11z"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+</svg>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#hero"><svg viewBox="0 0 200 200" aria-hidden="true"><rect width="200" height="200" rx="48" fill="#3355FF"/><path d="M 100 44 A 56 56 0 1 0 140 60" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" fill="none"/><polygon points="128,48 150,55 134,70" fill="#FFFFFF"/><circle cx="100" cy="100" r="22" fill="#FFFFFF"/></svg>Rewind</a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#how">How it works</a>
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#safe">Privacy</a>
+      <a class="pill-btn" href="#demo">Try the demo</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <!-- 1 · Hero -->
+  <section id="hero" class="scrub" data-scrub="hero">
+    <div class="stage">
+      <div class="hero-copy">
+        <p class="eyebrow">Free app · iPhone and Android</p>
+        <h1>Rewind</h1>
+        <p class="tag">Never miss a moment again.</p>
+        <p class="lead">The app that saves the best 30 seconds of your day, after they happen.</p>
+      </div>
+      <div class="hero-phone">
+        <div class="phone">
+          <div class="screen">
+            <div class="island"></div>
+            <img src="img/parkour.jpg" alt="A boy doing a parkour jump, seen on a phone screen" style="object-position:50% 30%">
+            <span class="rec"><i></i>Rewind is on · last 30 s</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-hint" aria-hidden="true">Scroll<span></span></div>
+    </div>
+  </section>
+
+  <!-- 2 · Story -->
+  <section id="story" class="scrub" data-scrub="story">
+    <div class="stage">
+      <img class="bg" src="img/splash.jpg" alt="">
+      <div class="shade"></div>
+      <div class="wrap">
+        <div class="story-text" data-words>
+          <p>Last summer, at the beach, my friend tried a backflip.</p>
+          <p>He fell into the water in the funniest way. Everybody laughed.</p>
+          <p class="lost">Nobody recorded it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · Problem -->
+  <section id="problem" class="scrub" data-scrub="fill">
+    <div class="stage">
+      <div class="wrap">
+        <h2 class="fill"><span>The best moments happen when you are </span><em><span>not recording.</span></em></h2>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Moments -->
+  <section id="moments" class="scrub" data-scrub="track">
+    <div class="stage">
+      <div class="wrap sec-head" style="margin-bottom:0">
+        <p class="eyebrow">Sound familiar?</p>
+        <h2 class="h2">Moments you only see once</h2>
+      </div>
+      <div class="track">
+        <figure class="mcard" style="margin:0">
+          <div class="ph"><img src="img/bebe.jpg" alt="A toddler taking first steps" style="object-position:30% 40%"></div>
+          <h3>First steps</h3><p>Your little brother walks for the first time. Your phone is in your pocket.</p>
+        </figure>
+        <figure class="mcard" style="margin:0">
+          <div class="ph"><img src="img/cena.jpg" alt="Friends laughing at dinner"></div>
+          <h3>The best joke</h3><p>Everybody is crying with laughter. Nobody can say it again the same way.</p>
+        </figure>
+        <figure class="mcard" style="margin:0">
+          <div class="ph"><img src="img/concierto.jpg" alt="People at a concert"></div>
+          <h3>Your favourite song</h3><p>The band plays it live. By the time you start filming, it's over.</p>
+        </figure>
+        <div class="mcard end"><p>They only happen once. You can't repeat them.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · Thirty -->
+  <section id="thirty" class="scrub dark" data-scrub="count">
+    <div class="stage">
+      <div class="wrap">
+        <div class="ring">
+          <svg viewBox="0 0 220 220" aria-hidden="true"><circle class="bgc" cx="110" cy="110" r="100"/><circle class="fg" cx="110" cy="110" r="100" stroke-dasharray="628.3" stroke-dashoffset="628.3"/></svg>
+          <div class="num"><b id="count">30</b><small>seconds</small></div>
+        </div>
+        <div class="thirty-copy">
+          <h2>Rewind is always 30 seconds behind you.</h2>
+          <p class="lead">So you are never late for your own life.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · How it works -->
+  <section id="how">
+    <div class="wrap how-grid">
+      <div class="how-steps">
+        <div class="how-head">
+          <p class="eyebrow">How it works</p>
+          <h2 class="h2">Instant replay for real life</h2>
+        </div>
+        <div class="step" data-step="0"><div class="n">1</div><h3>Turn it on</h3><p>Rewind records the last 30 seconds around you, and deletes them again and again.</p></div>
+        <div class="step" data-step="1"><div class="n">2</div><h3>Something amazing happens</h3><p>A trick, a joke, a surprise. Rewind already has it.</p></div>
+        <div class="step" data-step="2"><div class="n">3</div><h3>Click once</h3><p>Press the big button and Rewind saves the last 30 seconds. That's it.</p></div>
+      </div>
+      <div class="how-phone" aria-hidden="true">
+        <div class="phone">
+          <div class="screen">
+            <div class="island"></div>
+            <div class="scr active" data-screen="0">
+              <img src="img/perro.jpg" alt="" style="object-position:40% 40%">
+              <span class="rec"><i></i>Rewind is on</span>
+            </div>
+            <div class="scr" data-screen="1">
+              <img src="img/skate.jpg" alt="" style="object-position:50% 45%">
+              <div class="scrim"></div>
+              <span class="rec"><i></i>Recording</span>
+              <div class="buf"><span>Last 30 seconds</span><div class="bar"><i></i></div></div>
+            </div>
+            <div class="scr" data-screen="2">
+              <img src="img/skate.jpg" alt="" style="object-position:50% 45%">
+              <div class="scrim"></div>
+              <span class="saved">✓ Clip saved · 0:30</span>
+              <div class="big-save"><svg><use href="#i-rewind"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Features -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">Features</p>
+        <h2 class="h2">More than a camera</h2>
+      </div>
+      <div class="grid2">
+        <div class="card reveal"><div class="ico"><svg><use href="#i-click"/></svg></div><h3>One-click save</h3><p>Click once, or just say “Rewind!”.</p></div>
+        <div class="card reveal"><div class="ico"><svg><use href="#i-slow"/></svg></div><h3>Slow motion</h3><p>Watch the best part again, slowly.</p></div>
+        <div class="card reveal"><div class="ico"><svg><use href="#i-star"/></svg></div><h3>Weekly highlights</h3><p>Every Sunday, a short video with your best clips of the week.</p></div>
+        <div class="card reveal"><div class="ico"><svg><use href="#i-sliders"/></svg></div><h3>15, 30 or 60 seconds</h3><p>You choose how long Rewind remembers.</p></div>
+      </div>
+      <div class="chips reveal" aria-label="What you can do with a clip">
+        <span><b>Share</b> it with your friends</span>
+        <span><b>Post</b> it on social media</span>
+        <span><b>Tag</b> the people in it</span>
+        <span><b>Download</b> it to your phone</span>
+        <span><b>Message</b> it to a friend</span>
+        <span><b>Stream</b> it on a big screen</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · Who -->
+  <section id="who">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">Who is it for?</p>
+        <h2 class="h2">For everyone with a phone</h2>
+      </div>
+      <div class="grid4">
+        <div class="who reveal"><div class="ico"><svg><use href="#i-ball"/></svg></div><h3>Sports fans</h3><p>Save the winning point.</p></div>
+        <div class="who reveal"><div class="ico"><svg><use href="#i-home"/></svg></div><h3>Families</h3><p>Birthdays and holidays.</p></div>
+        <div class="who reveal"><div class="ico"><svg><use href="#i-music"/></svg></div><h3>Musicians</h3><p>Keep the perfect take you played once.</p></div>
+        <div class="who reveal"><div class="ico"><svg><use href="#i-paw"/></svg></div><h3>Pet owners</h3><p>Pets are always funny when you're not filming.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · Safe -->
+  <section id="safe" class="dark">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">Privacy</p>
+        <h2 class="h2">Is it safe? Yes, it is.</h2>
+      </div>
+      <div class="grid3">
+        <div class="dcard reveal"><div class="ico"><svg><use href="#i-key"/></svg></div><h3>You're in control</h3><p>It only records when <b style="color:var(--white)">you</b> turn it on.</p></div>
+        <div class="dcard reveal"><div class="ico"><svg><use href="#i-clock"/></svg></div><h3>Gone in 30 seconds</h3><p>Clips you don't save are deleted after 30 seconds.</p></div>
+        <div class="dcard reveal"><div class="ico"><svg><use href="#i-lock"/></svg></div><h3>Stays on your phone</h3><p>Nothing leaves it without your permission.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · Compare -->
+  <section id="compare">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">Rewind vs. a normal camera</p>
+        <h2 class="h2">Why not just use the camera?</h2>
+      </div>
+      <div class="vs">
+        <div class="old reveal"><h3>Normal camera</h3><ul><li>Unlock, open the app, press record</li><li>Too late: the moment is over</li><li>Can't save what already happened</li><li>Fills your phone with long videos</li></ul></div>
+        <div class="new reveal"><h3>Rewind</h3><ul><li>One click</li><li>Always ready, 30 seconds behind you</li><li>Saves what already happened</li><li>Keeps only what you want</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · Demo -->
+  <section id="demo" class="dark">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">Demo</p>
+        <h2 class="h2">Try Rewind now. It really works.</h2>
+        <p class="lead">Turn it on and wait for something good to happen. Then click <b style="color:var(--white)">Rewind!</b> and the last seconds are saved, even the part before you clicked. Everything stays on this device.</p>
+      </div>
+      <div class="demo-grid">
+        <div>
+          <div class="viewer">
+            <canvas id="cv" width="960" height="540" aria-label="Live view"></canvas>
+            <span class="rec" id="recPill" hidden><i></i><span id="recText">Rewind is on · last 30 s</span></span>
+            <div class="flash" id="flash"></div>
+            <div class="toast" id="toast" role="status"></div>
+          </div>
+          <div class="memory">
+            <div class="row"><span id="memLabel">Rewind is off</span><span id="memTime">0:00 / 0:30</span></div>
+            <div class="bar"><i id="memBar"></i></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ctrl">
+            <span id="srcLabel">What to film</span>
+            <div class="seg" role="group" aria-labelledby="srcLabel">
+              <button id="srcScene" aria-pressed="true">Live scene</button>
+              <button id="srcCam" aria-pressed="false">Camera</button>
+            </div>
+          </div>
+          <div class="ctrl">
+            <span id="lenLabel">How long it remembers</span>
+            <div class="seg" role="group" aria-labelledby="lenLabel">
+              <button data-len="15" aria-pressed="false">15 s</button>
+              <button data-len="30" aria-pressed="true">30 s</button>
+              <button data-len="60" aria-pressed="false">60 s</button>
+            </div>
+          </div>
+          <button class="power" id="power" aria-pressed="false"><i></i><span>Turn on Rewind</span></button>
+          <button class="save" id="save" disabled><svg><use href="#i-rewind"/></svg>Rewind!</button>
+          <p class="hint">or press <kbd>Space</kbd><span id="voiceHint" hidden>, or say “Rewind!”</span></p>
+          <label class="check" id="voiceWrap" hidden><input type="checkbox" id="voice"> Save with my voice</label>
+          <p class="status" id="status" aria-live="polite">Rewind is off. Nothing is being recorded.</p>
+        </div>
+      </div>
+
+      <div class="clips-head">
+        <h3>Your clips</h3>
+        <button class="ghost" id="highlights" hidden><svg width="18" height="18"><use href="#i-star"/></svg>Play highlights</button>
+      </div>
+      <div class="clips" id="clips">
+        <p class="empty" id="empty">Your saved clips will appear here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · End -->
+  <section id="end">
+    <img src="img/atardecer.jpg" alt="Friends watching the sunset" loading="lazy">
+    <div class="shade"></div>
+    <div class="wrap">
+      <h2>Don't lose your best moments.</h2>
+      <a class="pill-btn" href="#demo" style="font-size:18px;padding:14px 24px">Get Rewind · it's free</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>Rewind</b> · an app idea for English class, Unit 1 “My new app”.</p>
+    <p>Photos from Wikimedia Commons: THOR (CC BY 2.0), W.carter (CC0), Danilobu (CC BY 2.5), PattayaPatrol (CC BY-SA 4.0), U.S. Navy (public domain), Sally Wehner (CC BY 2.0), Jarek Tuszyński (CC BY 4.0), Marwenwafi (CC BY-SA 4.0).</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce) root.classList.add("js");
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const $ = s => document.querySelector(s);
+
+  /* ---------- Reveal on scroll ---------- */
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+  }), { threshold: .15 });
+  document.querySelectorAll(".reveal").forEach((el, i) => {
+    el.style.transitionDelay = (i % 4) * 80 + "ms";
+    io.observe(el);
+  });
+
+  /* ---------- Story: split into words ---------- */
+  const words = [];
+  document.querySelectorAll("[data-words] p").forEach(p => {
+    p.innerHTML = p.textContent.split(" ").map(w => `<span class="w">${w}</span>`).join(" ");
+    p.querySelectorAll(".w").forEach(w => words.push(w));
+  });
+
+  /* ---------- Pinned stages ---------- */
+  const heroCopy = $(".hero-copy"), heroPhone = $(".hero-phone");
+  const storyBg = $("#story .bg");
+  const fillSpans = document.querySelectorAll(".fill span");
+  const track = $(".track");
+  const ring = $(".ring .fg"), count = $("#count");
+  const handlers = {
+    hero(p) {
+      heroCopy.style.opacity = clamp(1 - p * 1.8, 0, 1);
+      heroCopy.style.transform = `translateY(${-p * 120}px) scale(${1 - p * .12})`;
+      const vh = innerHeight;
+      heroPhone.style.transform = `translateY(${-p * vh * .42}px) scale(${1 + p * .25})`;
+    },
+    story(p) {
+      const lit = Math.floor(clamp((p - .08) / .8, 0, 1) * words.length + .001);
+      words.forEach((w, i) => w.classList.toggle("on", i < lit));
+      storyBg.style.transform = `scale(${1.15 - p * .15})`;
+    },
+    fill(p) {
+      const t = clamp((p - .1) / .75, 0, 1), n = fillSpans.length;
+      fillSpans.forEach((s, i) => {
+        const local = clamp(t * n - i, 0, 1);
+        s.style.backgroundPosition = `${100 - local * 100}% 0`;
+      });
+    },
+    track(p) {
+      const max = track.scrollWidth - innerWidth + 32;
+      track.style.transform = `translateX(${-clamp((p - .05) / .9, 0, 1) * Math.max(0, max)}px)`;
+    },
+    count(p) {
+      const t = clamp((p - .1) / .7, 0, 1);
+      count.textContent = Math.round(t * 30);
+      ring.style.strokeDashoffset = 628.3 * (1 - t);
+    }
+  };
+  const scrubs = [...document.querySelectorAll("[data-scrub]")];
+  function onScroll() {
+    for (const el of scrubs) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < -50 || r.top > innerHeight + 50) continue;
+      const total = r.height - innerHeight;
+      handlers[el.dataset.scrub](total > 0 ? clamp(-r.top / total, 0, 1) : 0);
+    }
+  }
+  if (reduce) {
+    words.forEach(w => w.classList.add("on"));
+    fillSpans.forEach(s => s.style.backgroundPosition = "0 0");
+    count.textContent = 30; ring.style.strokeDashoffset = 0;
+    scrubs.forEach(el => { if (el.dataset.scrub !== "track") el.style.height = "auto"; });
+    document.querySelectorAll("[data-scrub]:not([data-scrub=track]) .stage").forEach(s => { s.style.position = "relative"; s.style.height = "auto"; s.style.minHeight = "100vh"; });
+  } else {
+    let ticking = false;
+    addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); ticking = false; }); } }, { passive: true });
+    addEventListener("resize", onScroll);
+    onScroll();
+  }
+  if (reduce) { addEventListener("scroll", () => handlers.track(clamp(-$("#moments").getBoundingClientRect().top / ($("#moments").offsetHeight - innerHeight), 0, 1)), { passive: true }); }
+
+  /* ---------- How it works: active step ---------- */
+  const steps = document.querySelectorAll(".step"), screens = document.querySelectorAll(".scr");
+  const stepIO = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const n = +e.target.dataset.step;
+    steps.forEach(s => s.classList.toggle("active", +s.dataset.step === n));
+    screens.forEach(s => s.classList.toggle("active", +s.dataset.screen === n));
+  }), { rootMargin: "-45% 0px -45% 0px" });
+  steps.forEach(s => stepIO.observe(s));
+  steps[0].classList.add("active");
+
+  /* =========================================================
+     DEMO: a real rolling recorder.
+     Several MediaRecorders run staggered; the oldest ones are thrown
+     away, so nothing older than the chosen length (plus a few seconds)
+     is ever kept. Saving stops the recorder that covers the last N s.
+     ========================================================= */
+  const cv = $("#cv"), cx = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const st = { on: false, len: 30, src: "scene", recs: [], cam: null, camVideo: null, audio: null, onAt: 0, clips: [], voice: null };
+  const mime = (() => {
+    if (!window.MediaRecorder) return null;
+    for (const m of ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4;codecs=avc1,mp4a", "video/mp4"])
+      if (MediaRecorder.isTypeSupported(m)) return m;
+    return "";
+  })();
+  const ext = mime && mime.includes("mp4") ? "mp4" : "webm";
+  const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  const status = t => $("#status").textContent = t;
+  let toastT;
+  function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2200); }
+
+  /* ---- Live scene: a player shooting hoops; sometimes a trick shot ---- */
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const scene = { shot: null, nextShot: 0, conf: [], banner: 0, bannerText: "", score: 0 };
+  const HOOP = { x: 790, y: 210 };
+  function newShot(t) {
+    const kind = rnd() < .3 ? "trick" : (rnd() < .65 ? "in" : "miss");
+    scene.shot = { t0: t, kind, dur: kind === "trick" ? 2.2 : 1.3 };
+    sfx("throw");
+  }
+  function ballPos(s, t) {
+    const u = clamp((t - s.t0) / s.dur, 0, 1);
+    const sx = 205, sy = 330;
+    if (s.kind === "trick") {
+      // throw backwards to the wall, bounce on the floor, then into the hoop
+      if (u < .35) { const k = u / .35; return [sx - 120 * k, sy - 160 * Math.sin(Math.PI * k * .9) + 140 * k * k]; }
+      if (u < .55) { const k = (u - .35) / .2; return [85 + 160 * k, 470 - 120 * Math.sin(Math.PI * k)]; }
+      const k = (u - .55) / .45; return [245 + (HOOP.x - 245) * k, 470 + (HOOP.y - 470) * k - 330 * Math.sin(Math.PI * k)];
+    }
+    const tx = s.kind === "miss" ? HOOP.x + 34 : HOOP.x;
+    return [sx + (tx - sx) * u, sy + (HOOP.y - sy) * u - 260 * Math.sin(Math.PI * u)];
+  }
+  function drawScene(t) {
+    const g = cx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#8EC5FF"); g.addColorStop(1, "#DDEEFF");
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+    cx.fillStyle = "#FFFFFF"; // clouds
+    for (let i = 0; i < 3; i++) { const x = ((t * 12 + i * 380) % (W + 200)) - 100, y = 70 + i * 40; cx.beginPath(); cx.ellipse(x, y, 60, 18, 0, 0, 7); cx.ellipse(x + 40, y - 10, 40, 16, 0, 0, 7); cx.fill(); }
+    cx.fillStyle = "#3D7A4F"; cx.fillRect(0, 470, W, 70); // grass
+    cx.fillStyle = "#C9764A"; cx.fillRect(0, 456, W, 16); // court edge
+    // hoop
+    cx.fillStyle = "#555"; cx.fillRect(HOOP.x + 70, HOOP.y - 40, 10, 300);
+    cx.fillStyle = "#FFFFFF"; cx.fillRect(HOOP.x + 40, HOOP.y - 80, 40, 90);
+    cx.strokeStyle = "#E4572E"; cx.lineWidth = 6; cx.beginPath(); cx.moveTo(HOOP.x - 30, HOOP.y); cx.lineTo(HOOP.x + 40, HOOP.y); cx.stroke();
+    cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) { cx.beginPath(); cx.moveTo(HOOP.x - 28 + i * 16, HOOP.y); cx.lineTo(HOOP.x - 20 + i * 12, HOOP.y + 40); cx.stroke(); }
+    // shot logic
+    if (!scene.shot && t > scene.nextShot) newShot(t);
+    const s = scene.shot;
+    let arm = 0;
+    if (s) {
+      const u = (t - s.t0) / s.dur;
+      arm = clamp(1 - u * 4, 0, 1);
+      const [bx, by] = ballPos(s, t);
+      if (s.kind === "trick" && !s.bounced && u > .35) { s.bounced = true; sfx("bounce"); }
+      cx.fillStyle = "#F28C28"; cx.beginPath(); cx.arc(bx, by, 16, 0, 7); cx.fill();
+      cx.strokeStyle = "#7A3E0A"; cx.lineWidth = 2; cx.beginPath(); cx.arc(bx, by, 16, 0, 7); cx.moveTo(bx - 16, by); cx.lineTo(bx + 16, by); cx.stroke();
+      if (u >= 1) {
+        if (s.kind === "miss") { scene.banner = t; scene.bannerText = "So close!"; sfx("rim"); }
+        else {
+          scene.score++; sfx(s.kind === "trick" ? "cheer" : "swish");
+          scene.banner = t; scene.bannerText = s.kind === "trick" ? "TRICK SHOT!" : "Nice!";
+          if (s.kind === "trick") for (let i = 0; i < 80; i++) scene.conf.push({ x: HOOP.x, y: HOOP.y, vx: (rnd() - .5) * 600, vy: -rnd() * 500 - 100, c: ["#3355FF", "#FF3B30", "#FFC93C", "#FFFFFF"][i % 4], t });
+        }
+        scene.shot = null; scene.nextShot = t + 1.6 + rnd() * 1.6;
+      }
+    }
+    // player
+    const px = 200, py = 470, bob = Math.sin(t * 6) * 2;
+    cx.strokeStyle = "#14161B"; cx.lineWidth = 9; cx.lineCap = "round";
+    cx.beginPath(); cx.moveTo(px, py - 70 + bob); cx.lineTo(px - 16, py); cx.moveTo(px, py - 70 + bob); cx.lineTo(px + 16, py); cx.stroke();
+    cx.fillStyle = "#3355FF"; cx.beginPath(); cx.roundRect(px - 22, py - 140 + bob, 44, 76, 14); cx.fill();
+    cx.beginPath(); cx.moveTo(px + 10, py - 125 + bob); cx.lineTo(px + 30, py - 125 - 40 * arm + bob); cx.stroke();
+    cx.fillStyle = "#F1C27D"; cx.beginPath(); cx.arc(px, py - 162 + bob, 22, 0, 7); cx.fill();
+    cx.fillStyle = "#14161B"; cx.beginPath(); cx.arc(px + 8, py - 165 + bob, 3, 0, 7); cx.fill();
+    // confetti
+    scene.conf = scene.conf.filter(c => t - c.t < 2.5);
+    for (const c of scene.conf) { const k = t - c.t; cx.fillStyle = c.c; cx.fillRect(c.x + c.vx * k, c.y + c.vy * k + 420 * k * k, 8, 8); }
+    // banner
+    if (t - scene.banner < 1.6 && scene.bannerText) {
+      const a = 1 - (t - scene.banner) / 1.6;
+      cx.globalAlpha = a; cx.fillStyle = scene.bannerText === "TRICK SHOT!" ? "#FF3B30" : "#14161B";
+      cx.font = "800 64px Manrope, sans-serif"; cx.textAlign = "center";
+      cx.fillText(scene.bannerText, W / 2, 150 - (1 - a) * 30); cx.globalAlpha = 1; cx.textAlign = "left";
+    }
+    cx.fillStyle = "rgba(14,17,22,.6)"; cx.beginPath(); cx.roundRect(W - 150, H - 62, 130, 42, 21); cx.fill();
+    cx.fillStyle = "#FFFFFF"; cx.font = "700 22px Manrope, sans-serif"; cx.fillText("Score " + scene.score, W - 132, H - 33);
+  }
+  function drawCam() {
+    const v = st.camVideo;
+    cx.fillStyle = "#000"; cx.fillRect(0, 0, W, H);
+    if (v && v.videoWidth) {
+      const r = Math.max(W / v.videoWidth, H / v.videoHeight), w = v.videoWidth * r, h = v.videoHeight * r;
+      cx.drawImage(v, (W - w) / 2, (H - h) / 2, w, h);
+    }
+  }
+  function drawClock() {
+    const d = new Date(), s = d.toLocaleTimeString("en-GB") + "." + Math.floor(d.getMilliseconds() / 100);
+    cx.fillStyle = "rgba(14,17,22,.6)"; cx.beginPath(); cx.roundRect(20, H - 62, 170, 42, 21); cx.fill();
+    cx.fillStyle = "#FFFFFF"; cx.font = "600 22px Inter, sans-serif"; cx.fillText(s, 38, H - 33);
+  }
+  const t0 = performance.now();
+  function draw() {
+    const t = (performance.now() - t0) / 1000;
+    if (st.src === "cam" && st.cam) drawCam(); else drawScene(t);
+    drawClock();
+  }
+  (function loop() { if (!document.hidden) draw(); requestAnimationFrame(loop); })();
+  // background tabs pause requestAnimationFrame: keep drawing while recording
+  setInterval(() => { if (document.hidden && st.on) draw(); }, 100);
+
+  /* ---- Sound for the live scene (also goes into the clip) ---- */
+  function ensureAudio() {
+    if (st.audio) return st.audio;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    const ctx = new AC(), dest = ctx.createMediaStreamDestination(), out = ctx.createGain();
+    out.gain.value = .35; out.connect(ctx.destination); out.connect(dest);
+    st.audio = { ctx, dest, out };
+    return st.audio;
+  }
+  function noise(ctx, len) { const b = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); return b; }
+  function sfx(kind) {
+    const a = st.audio; if (!a || st.src !== "scene" || !st.on) return;
+    const { ctx, out } = a, now = ctx.currentTime;
+    if (kind === "throw" || kind === "bounce" || kind === "rim") {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = kind === "rim" ? "triangle" : "sine";
+      o.frequency.setValueAtTime(kind === "rim" ? 520 : 140, now); o.frequency.exponentialRampToValueAtTime(kind === "rim" ? 300 : 60, now + .15);
+      g.gain.setValueAtTime(.8, now); g.gain.exponentialRampToValueAtTime(.001, now + .2);
+      o.connect(g).connect(out); o.start(now); o.stop(now + .22);
+    } else {
+      const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      n.buffer = noise(ctx, kind === "cheer" ? 1.8 : .35);
+      f.type = "bandpass"; f.frequency.value = kind === "cheer" ? 1200 : 3500; f.Q.value = kind === "cheer" ? .5 : 1.5;
+      g.gain.value = kind === "cheer" ? .9 : .5;
+      n.connect(f).connect(g).connect(out); n.start(now);
+    }
+  }
+
+  /* ---- Rolling recorder ---- */
+  function buildStream() {
+    const vs = cv.captureStream(30), tracks = [...vs.getVideoTracks()];
+    if (st.src === "cam" && st.cam) tracks.push(...st.cam.getAudioTracks());
+    else if (st.audio) tracks.push(...st.audio.dest.stream.getAudioTracks());
+    return new MediaStream(tracks);
+  }
+  let stream = null, loop = null;
+  const step = () => st.len / 3; // a new recorder every len/3 seconds
+  function startRecorder() {
+    let mr;
+    try { mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 2500000 } : undefined); }
+    catch (e) { mr = new MediaRecorder(stream); }
+    const rec = { mr, start: performance.now(), chunks: [] };
+    mr.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+    mr.start(1000);
+    st.recs.push(rec);
+  }
+  function dropRecorder(rec) { try { rec.mr.ondataavailable = null; if (rec.mr.state !== "inactive") rec.mr.stop(); } catch (e) {} rec.chunks = []; }
+  function tick() {
+    const now = performance.now();
+    const last = st.recs[st.recs.length - 1];
+    if (!last || now - last.start >= step() * 1000) startRecorder();
+    // throw away recorders that are no longer needed: this is the "deleted after N seconds" promise
+    while (st.recs.length > 1 && now - st.recs[1].start >= st.len * 1000) dropRecorder(st.recs.shift());
+    const have = Math.min(st.len, (now - st.onAt) / 1000);
+    $("#memTime").textContent = fmt(have) + " / " + fmt(st.len);
+    $("#memBar").style.width = (have / st.len * 100) + "%";
+  }
+  async function turnOn() {
+    if (!mime && mime !== "") { status("This browser can't record video. Try Chrome, Edge or Safari."); return; }
+    ensureAudio(); if (st.audio && st.audio.ctx.state === "suspended") await st.audio.ctx.resume();
+    stream = buildStream();
+    st.on = true; st.onAt = performance.now(); st.recs = [];
+    startRecorder(); loop = setInterval(tick, 250); tick();
+    $("#power").setAttribute("aria-pressed", "true"); $("#power span").textContent = "Turn off Rewind";
+    $("#save").disabled = false; $("#recPill").hidden = false;
+    $("#recText").textContent = `Rewind is on · last ${st.len} s`;
+    $("#memLabel").textContent = "Rewind remembers";
+    document.querySelectorAll("[data-len]").forEach(b => b.disabled = true);
+    status(st.src === "scene" ? "Rewind is on. Wait for a trick shot, then click Rewind!" : "Rewind is on. Do something fun, then click Rewind!");
+    if ($("#voice").checked) startVoice();
+  }
+  function turnOff(msg) {
+    st.on = false; clearInterval(loop);
+    st.recs.forEach(dropRecorder); st.recs = [];
+    if (stream) stream.getVideoTracks().forEach(t => t.stop());
+    stream = null;
+    $("#power").setAttribute("aria-pressed", "false"); $("#power span").textContent = "Turn on Rewind";
+    $("#save").disabled = true; $("#recPill").hidden = true;
+    $("#memLabel").textContent = "Rewind is off"; $("#memTime").textContent = "0:00 / " + fmt(st.len); $("#memBar").style.width = "0";
+    document.querySelectorAll("[data-len]").forEach(b => b.disabled = false);
+    status(msg || "Rewind is off. Everything that wasn't saved has been deleted.");
+    stopVoice();
+  }
+  function saveClip() {
+    if (!st.on || !st.recs.length) return;
+    const now = performance.now();
+    // the youngest recorder that already covers the full length, else the oldest one
+    let pick = null;
+    for (const r of st.recs) if (now - r.start >= st.len * 1000) pick = r;
+    if (!pick) pick = st.recs[0];
+    st.recs.splice(st.recs.indexOf(pick), 1);
+    if (!st.recs.length) startRecorder();
+    const age = (now - pick.start) / 1000;
+    const clip = { offset: Math.max(0, age - st.len), len: Math.min(age, st.len), at: new Date(), src: st.src };
+    pick.mr.onstop = () => {
+      clip.blob = new Blob(pick.chunks, { type: (pick.mr.mimeType || mime || "video/webm").split(";")[0] });
+      pick.chunks = [];
+      addClip(clip);
+    };
+    pick.mr.stop();
+    $("#flash").classList.remove("go"); void $("#flash").offsetWidth; $("#flash").classList.add("go");
+    toast(`✓ Clip saved · ${fmt(clip.len)}`);
+    status(`Saved the last ${fmt(clip.len)}. Rewind is still on.`);
+  }
+
+  /* ---- Clips ---- */
+  function prepVideo(v, clip) {
+    // MediaRecorder WebM files often report no duration: force it before seeking
+    return new Promise(res => {
+      const go = () => { v.currentTime = clip.offset + .05; v.addEventListener("seeked", () => res(), { once: true }); };
+      v.addEventListener("loadedmetadata", () => {
+        if (isFinite(v.duration)) go();
+        else { v.currentTime = 1e7; v.addEventListener("durationchange", function f() { if (isFinite(v.duration)) { v.removeEventListener("durationchange", f); go(); } }); }
+      }, { once: true });
+    });
+  }
+  function addClip(clip) {
+    clip.url = URL.createObjectURL(clip.blob);
+    st.clips.push(clip);
+    $("#empty").hidden = true;
+    const el = document.createElement("article");
+    el.className = "clip";
+    const time = clip.at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    el.innerHTML = `<video playsinline preload="auto"></video>
+      <div class="meta"><b>${clip.src === "cam" ? "Camera" : "Live scene"} · ${fmt(clip.len)}</b><span>Saved at ${time}</span></div>
+      <div class="prog"><i></i></div>
+      <div class="acts">
+        <button class="ghost" data-a="play">Play</button>
+        <button class="ghost" data-a="slow" aria-pressed="false">Slow motion</button>
+        <button class="ghost" data-a="dl"><svg width="16" height="16"><use href="#i-down"/></svg>Download</button>
+        <button class="ghost" data-a="del">Delete</button>
+      </div>`;
+    const v = el.querySelector("video"), bar = el.querySelector(".prog i"), playB = el.querySelector('[data-a="play"]');
+    clip.el = el; clip.v = v;
+    v.src = clip.url;
+    clip.ready = prepVideo(v, clip);
+    v.addEventListener("timeupdate", () => { bar.style.width = clamp((v.currentTime - clip.offset) / clip.len, 0, 1) * 100 + "%"; });
+    v.addEventListener("play", () => playB.textContent = "Pause");
+    v.addEventListener("pause", () => playB.textContent = "Play");
+    v.addEventListener("ended", () => { v.currentTime = clip.offset + .05; if (clip.onEnd) clip.onEnd(); });
+    el.addEventListener("click", async e => {
+      const b = e.target.closest("button"); if (!b) return;
+      const a = b.dataset.a;
+      if (a === "play") { await clip.ready; if (v.paused) { if (v.currentTime < clip.offset) v.currentTime = clip.offset + .05; v.play(); } else v.pause(); }
+      if (a === "slow") { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); v.playbackRate = on ? .5 : 1; }
+      if (a === "dl") download(clip, b);
+      if (a === "del") { v.pause(); URL.revokeObjectURL(clip.url); el.remove(); st.clips.splice(st.clips.indexOf(clip), 1); if (!st.clips.length) $("#empty").hidden = false; updHighlights(); }
+    });
+    $("#clips").prepend(el);
+    updHighlights();
+  }
+  function updHighlights() { $("#highlights").hidden = st.clips.length < 2; }
+  async function download(clip, btn) {
+    const name = `rewind-${clip.at.toTimeString().slice(0, 8).replace(/:/g, "")}.${ext}`;
+    const api = window.claude && window.claude.use ? await window.claude.use("downloads").catch(() => null) : null;
+    if (api) {
+      try { await api.save({ filename: name, data: clip.blob }); toast("✓ Downloaded"); }
+      catch (e) { if (e && e.code !== "declined") toast("Download isn't available here"); }
+      return;
+    }
+    const a = document.createElement("a"); a.href = clip.url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  // Highlights: play every clip in order, like the weekly video
+  $("#highlights").addEventListener("click", async () => {
+    const list = [...st.clips];
+    let i = 0;
+    const next = async () => {
+      if (i > 0) list[i - 1].onEnd = null;
+      if (i >= list.length) { toast("That's your highlights!"); return; }
+      const c = list[i++];
+      c.el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      await c.ready; c.v.currentTime = c.offset + .05; c.onEnd = next; c.v.play();
+    };
+    next();
+  });
+
+  /* ---- Controls ---- */
+  $("#power").addEventListener("click", () => st.on ? turnOff() : turnOn());
+  $("#save").addEventListener("click", saveClip);
+  addEventListener("keydown", e => {
+    if (e.code !== "Space" || !st.on) return;
+    if (e.target.closest && e.target.closest("button, input, a, video")) return;
+    e.preventDefault(); saveClip();
+  });
+  document.querySelectorAll("[data-len]").forEach(b => b.addEventListener("click", () => {
+    st.len = +b.dataset.len;
+    document.querySelectorAll("[data-len]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("#memTime").textContent = "0:00 / " + fmt(st.len);
+  }));
+  $("#srcScene").addEventListener("click", () => setSource("scene"));
+  $("#srcCam").addEventListener("click", () => setSource("cam"));
+  async function setSource(src) {
+    if (src === st.src) return;
+    const wasOn = st.on;
+    if (wasOn) turnOff(" ");
+    if (src === "cam") {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("none");
+        st.cam = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: true })
+          .catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+        const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.srcObject = st.cam; await v.play();
+        st.camVideo = v;
+      } catch (e) {
+        status("The camera isn't allowed on this page. Use the live scene, or open Rewind's own link on a phone or laptop.");
+        return;
+      }
+    } else if (st.cam) { st.cam.getTracks().forEach(t => t.stop()); st.cam = null; st.camVideo = null; }
+    st.src = src;
+    $("#srcScene").setAttribute("aria-pressed", src === "scene");
+    $("#srcCam").setAttribute("aria-pressed", src === "cam");
+    if (wasOn) turnOn(); else status(src === "cam" ? "Camera ready. Turn on Rewind to start." : "Live scene ready. Turn on Rewind to start.");
+  }
+
+  /* ---- Say "Rewind!" ---- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) { $("#voiceWrap").hidden = false; }
+  function startVoice() {
+    if (!SR || st.voice) return;
+    const r = new SR(); r.lang = "en-US"; r.continuous = true; r.interimResults = true;
+    let last = 0;
+    r.onresult = e => {
+      const txt = [...e.results].slice(e.resultIndex).map(x => x[0].transcript).join(" ").toLowerCase();
+      if (/re-?wind|rewine|we wind/.test(txt) && performance.now() - last > 3000) { last = performance.now(); saveClip(); }
+    };
+    r.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { $("#voice").checked = false; status("The microphone isn't allowed here, so voice saving is off. Click the button instead."); st.voice = null; } };
+    r.onend = () => { if (st.voice === r && st.on) try { r.start(); } catch (e) {} };
+    st.voice = r; $("#voiceHint").hidden = false;
+    try { r.start(); } catch (e) {}
+  }
+  function stopVoice() { if (st.voice) { const r = st.voice; st.voice = null; try { r.stop(); } catch (e) {} } $("#voiceHint").hidden = true; }
+  $("#voice").addEventListener("change", e => { if (e.target.checked && st.on) startVoice(); else if (!e.target.checked) stopVoice(); });
+
+  if (!window.MediaRecorder || !cv.captureStream) {
+    $("#power").disabled = true;
+    status("This browser can't record video. Open the page in Chrome, Edge or Safari.");
+  }
+})();
+</script>
+
+</body>
+</html>
