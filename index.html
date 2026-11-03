@@ -921,7 +921,7 @@ footer b { color: var(--white); font-weight: 600; }
         const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.srcObject = st.cam; await v.play();
         st.camVideo = v;
       } catch (e) {
-        status("The camera isn't allowed here. Use the sample video, or open joeliniho.github.io/rewind on a phone or laptop.");
+        status("The camera isn't allowed here. Use the sample video, or open rewind-english.github.io on a phone or laptop.");
         return;
       }
     } else if (st.cam) { st.cam.getTracks().forEach(t => t.stop()); st.cam = null; st.camVideo = null; }

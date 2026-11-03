@@ -2,7 +2,7 @@
 
 **Never miss a moment again.** Rewind is an app idea made for English class (Unit 1, "My new app"): it keeps the last 30 seconds in memory and saves them with one click, after the moment happens.
 
-**Website and live demo:** https://joeliniho.github.io/rewind/
+**Website and live demo:** https://rewind-english.github.io/
 
 The demo really works in the browser: turn it on, wait for something good, click **Rewind!** and the last 15, 30 or 60 seconds are saved. It can use your camera or a sample video. Nothing leaves your device.
 
