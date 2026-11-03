@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Rewind saves the last 30 seconds, after they happen. Try the demo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' rx='48' fill='%233355FF'/%3E%3Ccircle cx='100' cy='100' r='26' fill='white'/%3E%3C/svg%3E">
 <style>body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
@@ -93,6 +94,15 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .hero-phone { --pw: clamp(220px, 24vw, 320px); margin-top: clamp(28px, 5vh, 48px); will-change: transform; }
 .hero-hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 14px; color: var(--soft); display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .hero-hint span { width: 2px; height: 28px; background: linear-gradient(var(--soft), transparent); animation: drip 1.8s infinite; }
+/* Wide screens: text on the left, the whole phone on the right */
+@media (min-width: 960px) {
+  #hero .stage { flex-direction: row; justify-content: center; align-items: center; gap: clamp(48px, 7vw, 120px); padding-top: 56px; }
+  .hero-copy { align-items: flex-start; text-align: left; max-width: 620px; }
+  .hero-copy h1 { font-size: clamp(96px, 10vw, 176px); }
+  .hero-copy .lead { text-align: left; }
+  .hero-phone { --pw: min(24vw, calc((100svh - 230px) / 2.17)); margin-top: 0; }
+  .hero-hint { display: none; }
+}
 @keyframes drip { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
 
 /* 2 · Story */
@@ -540,7 +550,7 @@ footer b { color: var(--white); font-weight: 600; }
           <div class="ctrl">
             <span id="srcLabel">What to film</span>
             <div class="seg" role="group" aria-labelledby="srcLabel">
-              <button id="srcScene" aria-pressed="true">Live scene</button>
+              <button id="srcScene" aria-pressed="true">Sample video</button>
               <button id="srcCam" aria-pressed="false">Camera</button>
             </div>
           </div>
@@ -584,7 +594,7 @@ footer b { color: var(--white); font-weight: 600; }
 <footer>
   <div class="wrap">
     <p><b>Rewind</b> · an app idea for English class, Unit 1 “My new app”.</p>
-    <p>Photos from Wikimedia Commons: THOR (CC BY 2.0), W.carter (CC0), Danilobu (CC BY 2.5), PattayaPatrol (CC BY-SA 4.0), U.S. Navy (public domain), Sally Wehner (CC BY 2.0), Jarek Tuszyński (CC BY 4.0), Marwenwafi (CC BY-SA 4.0).</p>
+    <p>Photos from Wikimedia Commons: THOR (CC BY 2.0), W.carter (CC0), Danilobu (CC BY 2.5), PattayaPatrol (CC BY-SA 4.0), U.S. Navy (public domain), Sally Wehner (CC BY 2.0), Jarek Tuszyński (CC BY 4.0), Marwenwafi (CC BY-SA 4.0). Demo video clips from Mixkit (free licence).</p>
   </div>
 </footer>
 
@@ -621,9 +631,16 @@ footer b { color: var(--white); font-weight: 600; }
   const handlers = {
     hero(p) {
       heroCopy.style.opacity = clamp(1 - p * 1.8, 0, 1);
-      heroCopy.style.transform = `translateY(${-p * 120}px) scale(${1 - p * .12})`;
-      const vh = innerHeight;
-      heroPhone.style.transform = `translateY(${-p * vh * .42}px) scale(${1 + p * .25})`;
+      if (innerWidth >= 960) {
+        // the text slides away and the phone moves to the centre and grows
+        const toCentre = innerWidth / 2 - (heroPhone.offsetLeft + heroPhone.offsetWidth / 2);
+        const e = p * p * (3 - 2 * p);
+        heroCopy.style.transform = `translateX(${-p * 160}px)`;
+        heroPhone.style.transform = `translateX(${toCentre * e}px) scale(${1 + e * .12})`;
+      } else {
+        heroCopy.style.transform = `translateY(${-p * 120}px) scale(${1 - p * .12})`;
+        heroPhone.style.transform = `translateY(${-p * innerHeight * .42}px) scale(${1 + p * .25})`;
+      }
     },
     story(p) {
       const lit = Math.floor(clamp((p - .08) / .8, 0, 1) * words.length + .001);
@@ -702,86 +719,13 @@ footer b { color: var(--white); font-weight: 600; }
   let toastT;
   function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2200); }
 
-  /* ---- Live scene: a player shooting hoops; sometimes a trick shot ---- */
-  let seed = 7;
-  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const scene = { shot: null, nextShot: 0, conf: [], banner: 0, bannerText: "", score: 0 };
-  const HOOP = { x: 790, y: 210 };
-  function newShot(t) {
-    const kind = rnd() < .3 ? "trick" : (rnd() < .65 ? "in" : "miss");
-    scene.shot = { t0: t, kind, dur: kind === "trick" ? 2.2 : 1.3 };
-    sfx("throw");
-  }
-  function ballPos(s, t) {
-    const u = clamp((t - s.t0) / s.dur, 0, 1);
-    const sx = 205, sy = 330;
-    if (s.kind === "trick") {
-      // throw backwards to the wall, bounce on the floor, then into the hoop
-      if (u < .35) { const k = u / .35; return [sx - 120 * k, sy - 160 * Math.sin(Math.PI * k * .9) + 140 * k * k]; }
-      if (u < .55) { const k = (u - .35) / .2; return [85 + 160 * k, 470 - 120 * Math.sin(Math.PI * k)]; }
-      const k = (u - .55) / .45; return [245 + (HOOP.x - 245) * k, 470 + (HOOP.y - 470) * k - 330 * Math.sin(Math.PI * k)];
-    }
-    const tx = s.kind === "miss" ? HOOP.x + 34 : HOOP.x;
-    return [sx + (tx - sx) * u, sy + (HOOP.y - sy) * u - 260 * Math.sin(Math.PI * u)];
-  }
-  function drawScene(t) {
-    const g = cx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "#8EC5FF"); g.addColorStop(1, "#DDEEFF");
-    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-    cx.fillStyle = "#FFFFFF"; // clouds
-    for (let i = 0; i < 3; i++) { const x = ((t * 12 + i * 380) % (W + 200)) - 100, y = 70 + i * 40; cx.beginPath(); cx.ellipse(x, y, 60, 18, 0, 0, 7); cx.ellipse(x + 40, y - 10, 40, 16, 0, 0, 7); cx.fill(); }
-    cx.fillStyle = "#3D7A4F"; cx.fillRect(0, 470, W, 70); // grass
-    cx.fillStyle = "#C9764A"; cx.fillRect(0, 456, W, 16); // court edge
-    // hoop
-    cx.fillStyle = "#555"; cx.fillRect(HOOP.x + 70, HOOP.y - 40, 10, 300);
-    cx.fillStyle = "#FFFFFF"; cx.fillRect(HOOP.x + 40, HOOP.y - 80, 40, 90);
-    cx.strokeStyle = "#E4572E"; cx.lineWidth = 6; cx.beginPath(); cx.moveTo(HOOP.x - 30, HOOP.y); cx.lineTo(HOOP.x + 40, HOOP.y); cx.stroke();
-    cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2;
-    for (let i = 0; i < 5; i++) { cx.beginPath(); cx.moveTo(HOOP.x - 28 + i * 16, HOOP.y); cx.lineTo(HOOP.x - 20 + i * 12, HOOP.y + 40); cx.stroke(); }
-    // shot logic
-    if (!scene.shot && t > scene.nextShot) newShot(t);
-    const s = scene.shot;
-    let arm = 0;
-    if (s) {
-      const u = (t - s.t0) / s.dur;
-      arm = clamp(1 - u * 4, 0, 1);
-      const [bx, by] = ballPos(s, t);
-      if (s.kind === "trick" && !s.bounced && u > .35) { s.bounced = true; sfx("bounce"); }
-      cx.fillStyle = "#F28C28"; cx.beginPath(); cx.arc(bx, by, 16, 0, 7); cx.fill();
-      cx.strokeStyle = "#7A3E0A"; cx.lineWidth = 2; cx.beginPath(); cx.arc(bx, by, 16, 0, 7); cx.moveTo(bx - 16, by); cx.lineTo(bx + 16, by); cx.stroke();
-      if (u >= 1) {
-        if (s.kind === "miss") { scene.banner = t; scene.bannerText = "So close!"; sfx("rim"); }
-        else {
-          scene.score++; sfx(s.kind === "trick" ? "cheer" : "swish");
-          scene.banner = t; scene.bannerText = s.kind === "trick" ? "TRICK SHOT!" : "Nice!";
-          if (s.kind === "trick") for (let i = 0; i < 80; i++) scene.conf.push({ x: HOOP.x, y: HOOP.y, vx: (rnd() - .5) * 600, vy: -rnd() * 500 - 100, c: ["#3355FF", "#FF3B30", "#FFC93C", "#FFFFFF"][i % 4], t });
-        }
-        scene.shot = null; scene.nextShot = t + 1.6 + rnd() * 1.6;
-      }
-    }
-    // player
-    const px = 200, py = 470, bob = Math.sin(t * 6) * 2;
-    cx.strokeStyle = "#14161B"; cx.lineWidth = 9; cx.lineCap = "round";
-    cx.beginPath(); cx.moveTo(px, py - 70 + bob); cx.lineTo(px - 16, py); cx.moveTo(px, py - 70 + bob); cx.lineTo(px + 16, py); cx.stroke();
-    cx.fillStyle = "#3355FF"; cx.beginPath(); cx.roundRect(px - 22, py - 140 + bob, 44, 76, 14); cx.fill();
-    cx.beginPath(); cx.moveTo(px + 10, py - 125 + bob); cx.lineTo(px + 30, py - 125 - 40 * arm + bob); cx.stroke();
-    cx.fillStyle = "#F1C27D"; cx.beginPath(); cx.arc(px, py - 162 + bob, 22, 0, 7); cx.fill();
-    cx.fillStyle = "#14161B"; cx.beginPath(); cx.arc(px + 8, py - 165 + bob, 3, 0, 7); cx.fill();
-    // confetti
-    scene.conf = scene.conf.filter(c => t - c.t < 2.5);
-    for (const c of scene.conf) { const k = t - c.t; cx.fillStyle = c.c; cx.fillRect(c.x + c.vx * k, c.y + c.vy * k + 420 * k * k, 8, 8); }
-    // banner
-    if (t - scene.banner < 1.6 && scene.bannerText) {
-      const a = 1 - (t - scene.banner) / 1.6;
-      cx.globalAlpha = a; cx.fillStyle = scene.bannerText === "TRICK SHOT!" ? "#FF3B30" : "#14161B";
-      cx.font = "800 64px Manrope, sans-serif"; cx.textAlign = "center";
-      cx.fillText(scene.bannerText, W / 2, 150 - (1 - a) * 30); cx.globalAlpha = 1; cx.textAlign = "left";
-    }
-    cx.fillStyle = "rgba(14,17,22,.6)"; cx.beginPath(); cx.roundRect(W - 150, H - 62, 130, 42, 21); cx.fill();
-    cx.fillStyle = "#FFFFFF"; cx.font = "700 22px Manrope, sans-serif"; cx.fillText("Score " + scene.score, W - 132, H - 33);
-  }
-  function drawCam() {
-    const v = st.camVideo;
+  /* ---- Sample video: real footage on a loop (skate, dogs, a sprinkler) ---- */
+  const sv = document.createElement("video");
+  sv.src = "video/scene.mp4"; sv.muted = true; sv.loop = true; sv.playsInline = true; sv.preload = "auto";
+  sv.setAttribute("playsinline", "");
+  const playSample = () => sv.play().catch(() => {});
+  new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? playSample() : (!st.on && sv.pause()))).observe(cv);
+  function drawCover(v) {
     cx.fillStyle = "#000"; cx.fillRect(0, 0, W, H);
     if (v && v.videoWidth) {
       const r = Math.max(W / v.videoWidth, H / v.videoHeight), w = v.videoWidth * r, h = v.videoHeight * r;
@@ -790,53 +734,23 @@ footer b { color: var(--white); font-weight: 600; }
   }
   function drawClock() {
     const d = new Date(), s = d.toLocaleTimeString("en-GB") + "." + Math.floor(d.getMilliseconds() / 100);
-    cx.fillStyle = "rgba(14,17,22,.6)"; cx.beginPath(); cx.roundRect(20, H - 62, 170, 42, 21); cx.fill();
-    cx.fillStyle = "#FFFFFF"; cx.font = "600 22px Inter, sans-serif"; cx.fillText(s, 38, H - 33);
+    cx.font = "600 22px Inter, sans-serif";
+    const w = cx.measureText(s).width + 40;
+    cx.fillStyle = "rgba(14,17,22,.6)"; cx.beginPath(); cx.roundRect(20, H - 62, w, 42, 21); cx.fill();
+    cx.fillStyle = "#FFFFFF"; cx.fillText(s, 40, H - 33);
   }
-  const t0 = performance.now();
   function draw() {
-    const t = (performance.now() - t0) / 1000;
-    if (st.src === "cam" && st.cam) drawCam(); else drawScene(t);
+    drawCover(st.src === "cam" && st.cam ? st.camVideo : sv);
     drawClock();
   }
   (function loop() { if (!document.hidden) draw(); requestAnimationFrame(loop); })();
   // background tabs pause requestAnimationFrame: keep drawing while recording
   setInterval(() => { if (document.hidden && st.on) draw(); }, 100);
 
-  /* ---- Sound for the live scene (also goes into the clip) ---- */
-  function ensureAudio() {
-    if (st.audio) return st.audio;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return null;
-    const ctx = new AC(), dest = ctx.createMediaStreamDestination(), out = ctx.createGain();
-    out.gain.value = .35; out.connect(ctx.destination); out.connect(dest);
-    st.audio = { ctx, dest, out };
-    return st.audio;
-  }
-  function noise(ctx, len) { const b = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); return b; }
-  function sfx(kind) {
-    const a = st.audio; if (!a || st.src !== "scene" || !st.on) return;
-    const { ctx, out } = a, now = ctx.currentTime;
-    if (kind === "throw" || kind === "bounce" || kind === "rim") {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = kind === "rim" ? "triangle" : "sine";
-      o.frequency.setValueAtTime(kind === "rim" ? 520 : 140, now); o.frequency.exponentialRampToValueAtTime(kind === "rim" ? 300 : 60, now + .15);
-      g.gain.setValueAtTime(.8, now); g.gain.exponentialRampToValueAtTime(.001, now + .2);
-      o.connect(g).connect(out); o.start(now); o.stop(now + .22);
-    } else {
-      const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-      n.buffer = noise(ctx, kind === "cheer" ? 1.8 : .35);
-      f.type = "bandpass"; f.frequency.value = kind === "cheer" ? 1200 : 3500; f.Q.value = kind === "cheer" ? .5 : 1.5;
-      g.gain.value = kind === "cheer" ? .9 : .5;
-      n.connect(f).connect(g).connect(out); n.start(now);
-    }
-  }
-
   /* ---- Rolling recorder ---- */
   function buildStream() {
     const vs = cv.captureStream(30), tracks = [...vs.getVideoTracks()];
     if (st.src === "cam" && st.cam) tracks.push(...st.cam.getAudioTracks());
-    else if (st.audio) tracks.push(...st.audio.dest.stream.getAudioTracks());
     return new MediaStream(tracks);
   }
   let stream = null, loop = null;
@@ -863,7 +777,7 @@ footer b { color: var(--white); font-weight: 600; }
   }
   async function turnOn() {
     if (!mime && mime !== "") { status("This browser can't record video. Try Chrome, Edge or Safari."); return; }
-    ensureAudio(); if (st.audio && st.audio.ctx.state === "suspended") await st.audio.ctx.resume();
+    if (st.src === "scene") await playSample();
     stream = buildStream();
     st.on = true; st.onAt = performance.now(); st.recs = [];
     startRecorder(); loop = setInterval(tick, 250); tick();
@@ -872,7 +786,7 @@ footer b { color: var(--white); font-weight: 600; }
     $("#recText").textContent = `Rewind is on · last ${st.len} s`;
     $("#memLabel").textContent = "Rewind remembers";
     document.querySelectorAll("[data-len]").forEach(b => b.disabled = true);
-    status(st.src === "scene" ? "Rewind is on. Wait for a trick shot, then click Rewind!" : "Rewind is on. Do something fun, then click Rewind!");
+    status(st.src === "scene" ? "Rewind is on. Wait for a great moment (a trick, a jump, a splash), then click Rewind!" : "Rewind is on. Do something fun, then click Rewind!");
     if ($("#voice").checked) startVoice();
   }
   function turnOff(msg) {
@@ -928,7 +842,7 @@ footer b { color: var(--white); font-weight: 600; }
     el.className = "clip";
     const time = clip.at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     el.innerHTML = `<video playsinline preload="auto"></video>
-      <div class="meta"><b>${clip.src === "cam" ? "Camera" : "Live scene"} · ${fmt(clip.len)}</b><span>Saved at ${time}</span></div>
+      <div class="meta"><b>${clip.src === "cam" ? "Camera" : "Sample video"} · ${fmt(clip.len)}</b><span>Saved at ${time}</span></div>
       <div class="prog"><i></i></div>
       <div class="acts">
         <button class="ghost" data-a="play">Play</button>
@@ -1007,14 +921,14 @@ footer b { color: var(--white); font-weight: 600; }
         const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.srcObject = st.cam; await v.play();
         st.camVideo = v;
       } catch (e) {
-        status("The camera isn't allowed on this page. Use the live scene, or open Rewind's own link on a phone or laptop.");
+        status("The camera isn't allowed here. Use the sample video, or open joeliniho.github.io/rewind on a phone or laptop.");
         return;
       }
     } else if (st.cam) { st.cam.getTracks().forEach(t => t.stop()); st.cam = null; st.camVideo = null; }
     st.src = src;
     $("#srcScene").setAttribute("aria-pressed", src === "scene");
     $("#srcCam").setAttribute("aria-pressed", src === "cam");
-    if (wasOn) turnOn(); else status(src === "cam" ? "Camera ready. Turn on Rewind to start." : "Live scene ready. Turn on Rewind to start.");
+    if (wasOn) turnOn(); else status(src === "cam" ? "Camera ready. Turn on Rewind to start." : "Sample video ready. Turn on Rewind to start.");
   }
 
   /* ---- Say "Rewind!" ---- */
